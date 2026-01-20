@@ -5,11 +5,13 @@
 #include <shader.hpp>
 #include <buffer.hpp>
 #include <vertex.hpp>
+#include <texture.hpp>
+#include <stb_image.h>
 
 SDL_Window *window;
 SDL_GLContext context;
 constexpr int WIDTH = 1920, HEIGHT = 1080;
-GLuint program, vao;
+GLuint program, vao, texture;
 
 void message_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, GLchar const* message, void const* user_param)
 {
@@ -78,15 +80,18 @@ void init() {
 
   //TEMP
   Vertex vertices[] = {
-    {.pos = { 0.5f,  0.5f, 0.0f}, .norm = {0.0f, 1.0f, 0.0f}, .tex = {0.0f, 1.0f}},
-    {.pos = { 0.5f, -0.5f, 0.0f}, .norm = {0.0f, 1.0f, 0.0f}, .tex = {0.0f, 1.0f}},
-    {.pos = {-0.5f, -0.5f, 0.0f}, .norm = {0.0f, 1.0f, 0.0f}, .tex = {0.0f, 1.0f}},
-    {.pos = {-0.5f,  0.5f, 0.0f}, .norm = {0.0f, 1.0f, 0.0f}, .tex = {0.0f, 1.0f}},
+    {.pos = { 0.5f,  0.5f, 0.0f}, .norm = {1.0f, 0.0f, 0.0f}, .tex = {1.0f, 1.0f}},
+    {.pos = { 0.5f, -0.5f, 0.0f}, .norm = {1.0f, 0.0f, 0.0f}, .tex = {1.0f, 0.0f}},
+    {.pos = {-0.5f, -0.5f, 0.0f}, .norm = {1.0f, 0.0f, 0.0f}, .tex = {0.0f, 0.0f}}, 
+    {.pos = {-0.5f,  0.5f, 0.0f}, .norm = {1.0f, 0.0f, 0.0f}, .tex = {0.0f, 1.0f}},
   };
 
   uint32_t indices[] = {0, 1, 3, 1, 2, 3};
 
   vao = createBuffers(vertices, indices);
+
+  stbi_set_flip_vertically_on_load(true);
+  texture = createTexture("textures/container.jpg");
 }
 
 void run() {
@@ -107,6 +112,7 @@ void run() {
     glClear(GL_COLOR_BUFFER_BIT);
 
     glUseProgram(program);
+    glBindTextureUnit(0, texture);
     glBindVertexArray(vao);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
@@ -115,6 +121,8 @@ void run() {
 }
 
 void cleanup() {
+  glDeleteProgram(program);
+  glDeleteVertexArrays(1, &vao);
   SDL_DestroyWindow(window);
   SDL_Quit();
 }

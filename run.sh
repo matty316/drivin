@@ -1,4 +1,4 @@
-cp -r shaders build
+cp -r shaders textures build
 cd build
 cmake .. -DCMAKE_EXPORT_COMPILE_COMMANDS=1 $1 -GNinja
 ninja
