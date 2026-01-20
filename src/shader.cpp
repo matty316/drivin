@@ -30,7 +30,7 @@ GLuint compileShader(std::string path, GLint shaderType) {
   if (!success)
   {
       glGetShaderInfoLog(shader, 1024, NULL, infoLog);
-      std::print("unable to compile shader: {} | {}", path, infoLog);
+      std::println("unable to compile shader: {} | {}", path, infoLog);
       exit(EXIT_FAILURE);
   }
   return shader;
@@ -55,7 +55,7 @@ GLuint createProgram(std::string vertPath, std::string fragPath) {
   if (!success)
   {
       glGetProgramInfoLog(program, 1024, NULL, infoLog);
-      std::print("unable to link program: {}", infoLog);
+      std::println("unable to link program: {}", infoLog);
       exit(EXIT_FAILURE);
   }
 

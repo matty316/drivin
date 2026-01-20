@@ -11,6 +11,44 @@ SDL_GLContext context;
 constexpr int WIDTH = 1920, HEIGHT = 1080;
 GLuint program, vao;
 
+void message_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, GLchar const* message, void const* user_param)
+{
+	auto const src_str = [source]() {
+		switch (source)
+		{
+		case GL_DEBUG_SOURCE_API: return "API";
+		case GL_DEBUG_SOURCE_WINDOW_SYSTEM: return "WINDOW SYSTEM";
+		case GL_DEBUG_SOURCE_SHADER_COMPILER: return "SHADER COMPILER";
+		case GL_DEBUG_SOURCE_THIRD_PARTY: return "THIRD PARTY";
+		case GL_DEBUG_SOURCE_APPLICATION: return "APPLICATION";
+		case GL_DEBUG_SOURCE_OTHER: return "OTHER";
+		}
+	}();
+
+	auto const type_str = [type]() {
+		switch (type)
+		{
+		case GL_DEBUG_TYPE_ERROR: return "ERROR";
+		case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR: return "DEPRECATED_BEHAVIOR";
+		case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR: return "UNDEFINED_BEHAVIOR";
+		case GL_DEBUG_TYPE_PORTABILITY: return "PORTABILITY";
+		case GL_DEBUG_TYPE_PERFORMANCE: return "PERFORMANCE";
+		case GL_DEBUG_TYPE_MARKER: return "MARKER";
+		case GL_DEBUG_TYPE_OTHER: return "OTHER";
+		}
+	}();
+
+	auto const severity_str = [severity]() {
+		switch (severity) {
+		case GL_DEBUG_SEVERITY_NOTIFICATION: return "NOTIFICATION";
+		case GL_DEBUG_SEVERITY_LOW: return "LOW";
+		case GL_DEBUG_SEVERITY_MEDIUM: return "MEDIUM";
+		case GL_DEBUG_SEVERITY_HIGH: return "HIGH";
+		}
+	}();
+	std::println("{}, {}, {}, {}: {}", src_str, type_str, severity_str, id, message);
+}
+
 void init() {
   SDL_Init(SDL_INIT_VIDEO);
 
@@ -22,16 +60,20 @@ void init() {
   if (window == NULL) {
     // In the case that the window could not be made...
     SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Could not create window: %s\n", SDL_GetError());
-    std::print("could not create SDL window");
+    std::println("could not create SDL window");
     exit(EXIT_FAILURE);
   }
 
   context = SDL_GL_CreateContext(window);
 
   if (!gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress)) {
-    std::print("could not load glad");
+    std::println("could not load glad");
     exit(EXIT_FAILURE);
   }
+
+  glEnable(GL_DEBUG_OUTPUT);
+  glDebugMessageCallback(message_callback, nullptr);
+
   program = createProgram("shaders/shader.vert", "shaders/shader.frag");
 
   //TEMP
