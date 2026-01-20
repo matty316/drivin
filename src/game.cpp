@@ -39,7 +39,9 @@ void run() {
       }
     }
 
-    glViewport(0, 0, WIDTH, HEIGHT);
+    int width, height;
+    SDL_GetWindowSize(window, &width, &height);
+    glViewport(0, 0, width, height);
     glClearColor(1.0f, 0.0f, 1.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
