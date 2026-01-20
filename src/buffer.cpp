@@ -1,6 +1,6 @@
 #include <buffer.hpp>
 
-GLuint creatBuffers(std::span<Vertex> vertices, std::span<uint32_t> indices) {
+GLuint createBuffers(std::span<Vertex> vertices, std::span<uint32_t> indices) {
   GLuint vao, vbo, ibo;
 
   glCreateBuffers(1, &vbo);

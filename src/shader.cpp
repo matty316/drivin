@@ -1,0 +1,63 @@
+#include <shader.hpp>
+#include <fstream>
+#include <sstream>
+#include <print>
+
+GLuint compileShader(std::string path, GLint shaderType) {
+  std::ifstream f(path);
+
+  if (!f.is_open()) {
+    std::print("unable to open file: {}", path);
+    exit(EXIT_FAILURE);
+  }
+
+  std::stringstream s;
+  const char* code;
+
+  s << f.rdbuf();
+  f.close();
+
+  auto codeStr = s.str();
+  code = codeStr.c_str();
+
+  auto shader = glCreateShader(shaderType);
+  glShaderSource(shader, 1, &code, nullptr);
+  glCompileShader(shader);
+
+  int success;
+  char infoLog[1024];
+  glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+  if (!success)
+  {
+      glGetShaderInfoLog(shader, 1024, NULL, infoLog);
+      std::print("unable to compile shader: {} | {}", path, infoLog);
+      exit(EXIT_FAILURE);
+  }
+  return shader;
+}
+
+GLuint createProgram(std::string vertPath, std::string fragPath) {
+  auto vert = compileShader(vertPath, GL_VERTEX_SHADER);
+  auto frag = compileShader(fragPath, GL_FRAGMENT_SHADER);
+
+  auto program = glCreateProgram();
+  glAttachShader(program, vert);
+  glAttachShader(program, frag);
+  glLinkProgram(program);
+
+  glDeleteShader(vert);
+  glDeleteShader(frag);
+
+  int success;
+  char infoLog[1024];
+
+  glGetProgramiv(program, GL_LINK_STATUS, &success);
+  if (!success)
+  {
+      glGetProgramInfoLog(program, 1024, NULL, infoLog);
+      std::print("unable to link program: {}", infoLog);
+      exit(EXIT_FAILURE);
+  }
+
+  return program;
+}
