@@ -7,11 +7,17 @@
 #include <vertex.hpp>
 #include <texture.hpp>
 #include <stb_image.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <camera.hpp>
 
 SDL_Window *window;
 SDL_GLContext context;
 constexpr int WIDTH = 1920, HEIGHT = 1080;
 GLuint program, vao, texture;
+Camera camera;
+double timeStamp = SDL_GetPerformanceCounter();
+double deltaTime = 0.0;
 
 void message_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, GLchar const* message, void const* user_param)
 {
@@ -82,7 +88,7 @@ void init() {
   Vertex vertices[] = {
     {.pos = { 0.5f,  0.5f, 0.0f}, .norm = {1.0f, 0.0f, 0.0f}, .tex = {1.0f, 1.0f}},
     {.pos = { 0.5f, -0.5f, 0.0f}, .norm = {1.0f, 0.0f, 0.0f}, .tex = {1.0f, 0.0f}},
-    {.pos = {-0.5f, -0.5f, 0.0f}, .norm = {1.0f, 0.0f, 0.0f}, .tex = {0.0f, 0.0f}}, 
+    {.pos = {-0.5f, -0.5f, 0.0f}, .norm = {1.0f, 0.0f, 0.0f}, .tex = {0.0f, 0.0f}},
     {.pos = {-0.5f,  0.5f, 0.0f}, .norm = {1.0f, 0.0f, 0.0f}, .tex = {0.0f, 1.0f}},
   };
 
@@ -94,6 +100,44 @@ void init() {
   texture = createTexture("textures/container.jpg");
 }
 
+void processKeyDown(SDL_Event event) {
+  if (event.key.key == SDLK_W)
+    camera.movement.forward = true;
+  if (event.key.key == SDLK_S)
+    camera.movement.backward = true;
+}
+
+void update() {
+  auto now = SDL_GetPerformanceCounter();
+  deltaTime = now - timeStamp;
+  timeStamp = now;
+  camera.update(deltaTime, {0.0f, 0.0f});
+}
+
+void draw() {
+  int width, height;
+  SDL_GetWindowSize(window, &width, &height);
+  glViewport(0, 0, width, height);
+  glClearColor(1.0f, 0.0f, 1.0f, 1.0f);
+  glClear(GL_COLOR_BUFFER_BIT);
+
+  glUseProgram(program);
+
+  auto proj = glm::perspective(glm::radians(45.0f), (float)width/(float)height, 0.1f, 100.0f);
+  setMat4(program, "proj", proj);
+
+  setMat4(program, "view", camera.getView());
+
+  auto model = glm::rotate(glm::mat4(1.0f), glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+  setMat4(program, "model", model);
+
+  glBindTextureUnit(0, texture);
+  glBindVertexArray(vao);
+  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+  SDL_GL_SwapWindow(window);
+}
+
 void run() {
   bool done = false;
   while (!done) {
@@ -101,22 +145,15 @@ void run() {
 
     while (SDL_PollEvent(&event)) {
       if (event.type == SDL_EVENT_QUIT) {
-          done = true;
+        done = true;
+      }
+
+      if (event.type == SDL_EVENT_KEY_DOWN) {
+        processKeyDown(event);
       }
     }
-
-    int width, height;
-    SDL_GetWindowSize(window, &width, &height);
-    glViewport(0, 0, width, height);
-    glClearColor(1.0f, 0.0f, 1.0f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
-
-    glUseProgram(program);
-    glBindTextureUnit(0, texture);
-    glBindVertexArray(vao);
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
-    SDL_GL_SwapWindow(window);
+    update();
+    draw();
   }
 }
 
