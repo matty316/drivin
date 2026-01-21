@@ -122,7 +122,7 @@ void update() {
   movement.right = keyStates[SDL_SCANCODE_D] == 1;
 
   float x, y;
-  const auto mouseState = SDL_GetRelativeMouseState(&x, &y);
+  SDL_GetRelativeMouseState(&x, &y);
   mouseMovement.x += x;
   mouseMovement.y += y;
   std::println("({}, {})", x, y);
