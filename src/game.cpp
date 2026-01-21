@@ -10,14 +10,14 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <camera.hpp>
+#include <constants.hpp>
 
 SDL_Window *window;
 SDL_GLContext context;
-constexpr int WIDTH = 1920, HEIGHT = 1080;
 GLuint program, vao, texture;
-Camera camera;
-double timeStamp = SDL_GetPerformanceCounter();
+Uint64 last = SDL_GetPerformanceCounter();
 double deltaTime = 0.0;
+CameraMovement movement;
 
 void message_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, GLchar const* message, void const* user_param)
 {
@@ -79,6 +79,8 @@ void init() {
     exit(EXIT_FAILURE);
   }
 
+  SDL_SetWindowRelativeMouseMode(window, true);
+
   glEnable(GL_DEBUG_OUTPUT);
   glDebugMessageCallback(message_callback, nullptr);
 
@@ -98,20 +100,33 @@ void init() {
 
   stbi_set_flip_vertically_on_load(true);
   texture = createTexture("textures/container.jpg");
+  initCamera({0.0f, 0.0f, 3.0f}, {0.0f, 1.0f, 0.0f});
 }
 
-void processKeyDown(SDL_Event event) {
-  if (event.key.key == SDLK_W)
-    camera.movement.forward = true;
-  if (event.key.key == SDLK_S)
-    camera.movement.backward = true;
+bool processKeyDown(SDL_Event event) {
+  if (event.key.key == SDLK_ESCAPE)
+    return true;
+  return false;
 }
 
 void update() {
   auto now = SDL_GetPerformanceCounter();
-  deltaTime = now - timeStamp;
-  timeStamp = now;
-  camera.update(deltaTime, {0.0f, 0.0f});
+  deltaTime = ((now - last) / (double)SDL_GetPerformanceFrequency());
+  last = now;
+
+  const auto *keyStates = SDL_GetKeyboardState(nullptr);
+  if (keyStates[SDL_SCANCODE_W] == 1)
+    processKeyboard(FORWARD, deltaTime);
+  if (keyStates[SDL_SCANCODE_S] == 1)
+    processKeyboard(BACKWARD, deltaTime);
+  if (keyStates[SDL_SCANCODE_A] == 1)
+    processKeyboard(LEFT, deltaTime);
+  if (keyStates[SDL_SCANCODE_D] == 1)
+    processKeyboard(RIGHT, deltaTime);
+
+  float x, y;
+  const auto mouseState = SDL_GetMouseState(&x, &y);
+  processMouse(x, y);
 }
 
 void draw() {
@@ -126,7 +141,7 @@ void draw() {
   auto proj = glm::perspective(glm::radians(45.0f), (float)width/(float)height, 0.1f, 100.0f);
   setMat4(program, "proj", proj);
 
-  setMat4(program, "view", camera.getView());
+  setMat4(program, "view", getViewMatrix());
 
   auto model = glm::rotate(glm::mat4(1.0f), glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
   setMat4(program, "model", model);
@@ -142,14 +157,13 @@ void run() {
   bool done = false;
   while (!done) {
     SDL_Event event;
-
     while (SDL_PollEvent(&event)) {
       if (event.type == SDL_EVENT_QUIT) {
         done = true;
       }
 
       if (event.type == SDL_EVENT_KEY_DOWN) {
-        processKeyDown(event);
+        done = processKeyDown(event);
       }
     }
     update();
