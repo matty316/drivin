@@ -18,6 +18,7 @@ GLuint program, vao, texture;
 Uint64 last = SDL_GetPerformanceCounter();
 double deltaTime = 0.0;
 CameraMovement movement;
+struct MouseState { float x, y; } mouseMovement;
 
 void message_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, GLchar const* message, void const* user_param)
 {
@@ -79,7 +80,7 @@ void init() {
     exit(EXIT_FAILURE);
   }
 
-  SDL_SetWindowRelativeMouseMode(window, true);
+  if (!SDL_SetWindowRelativeMouseMode(window, true)) exit(EXIT_FAILURE);
 
   glEnable(GL_DEBUG_OUTPUT);
   glDebugMessageCallback(message_callback, nullptr);
@@ -100,7 +101,7 @@ void init() {
 
   stbi_set_flip_vertically_on_load(true);
   texture = createTexture("textures/container.jpg");
-  initCamera({0.0f, 0.0f, 3.0f}, {0.0f, 1.0f, 0.0f});
+  initCamera({0.0f, 0.0f, 3.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f});
 }
 
 bool processKeyDown(SDL_Event event) {
@@ -115,18 +116,20 @@ void update() {
   last = now;
 
   const auto *keyStates = SDL_GetKeyboardState(nullptr);
-  if (keyStates[SDL_SCANCODE_W] == 1)
-    processKeyboard(FORWARD, deltaTime);
-  if (keyStates[SDL_SCANCODE_S] == 1)
-    processKeyboard(BACKWARD, deltaTime);
-  if (keyStates[SDL_SCANCODE_A] == 1)
-    processKeyboard(LEFT, deltaTime);
-  if (keyStates[SDL_SCANCODE_D] == 1)
-    processKeyboard(RIGHT, deltaTime);
+  movement.forward = keyStates[SDL_SCANCODE_W] == 1;
+  movement.backward = keyStates[SDL_SCANCODE_S] == 1;
+  movement.left = keyStates[SDL_SCANCODE_A] == 1;
+  movement.right = keyStates[SDL_SCANCODE_D] == 1;
 
   float x, y;
-  const auto mouseState = SDL_GetMouseState(&x, &y);
-  processMouse(x, y);
+  const auto mouseState = SDL_GetRelativeMouseState(&x, &y);
+  mouseMovement.x += x;
+  mouseMovement.y += y;
+  std::println("({}, {})", x, y);
+  int width, height;
+  SDL_GetWindowSize(window, &width, &height);
+
+  updateCamera(deltaTime, mouseMovement.x / (float)width, mouseMovement.y / (float)height, movement);
 }
 
 void draw() {
@@ -158,13 +161,12 @@ void run() {
   while (!done) {
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
-      if (event.type == SDL_EVENT_QUIT) {
-        done = true;
-      }
-
-      if (event.type == SDL_EVENT_KEY_DOWN) {
-        done = processKeyDown(event);
-      }
+      if (event.type == SDL_EVENT_QUIT) done = true;
+      if (event.type == SDL_EVENT_KEY_DOWN) done = processKeyDown(event);
+      // if (event.type == SDL_EVENT_MOUSE_MOTION) {
+      //   mouseMovement.x += event.motion.xrel;
+      //   mouseMovement.y += event.motion.yrel;
+      // }
     }
     update();
     draw();

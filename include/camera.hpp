@@ -2,11 +2,16 @@
 
 #include <glm/glm.hpp>
 
-enum CameraMovement {
-  FORWARD, BACKWARD, LEFT, RIGHT
+struct CameraMovement {
+  bool forward = false;
+  bool backward = false;
+  bool left = false;
+  bool right = false;
+  bool up = false;
+  bool down = false;
+  bool fastSpeed = false;
 };
 
-void initCamera(glm::vec3 pos, glm::vec3 up);
-void processKeyboard(CameraMovement movement, double deltaTime);
-void processMouse(float x, float y);
+void initCamera(glm::vec3 pos, glm::vec3 target, glm::vec3 u);
+void updateCamera(double deltaTime, const float mouseX, const float mouseY, CameraMovement movement);
 glm::mat4 getViewMatrix();
