@@ -3,7 +3,7 @@
 #include <sstream>
 #include <print>
 
-GLuint compileShader(std::string path, GLint shaderType) {
+GLuint compileShader(const std::string &path, GLint shaderType) {
   std::ifstream f(path);
 
   if (!f.is_open()) {
@@ -36,7 +36,7 @@ GLuint compileShader(std::string path, GLint shaderType) {
   return shader;
 }
 
-GLuint createProgram(std::string vertPath, std::string fragPath) {
+GLuint createProgram(const std::string &vertPath, const std::string &fragPath) {
   auto vert = compileShader(vertPath, GL_VERTEX_SHADER);
   auto frag = compileShader(fragPath, GL_FRAGMENT_SHADER);
 

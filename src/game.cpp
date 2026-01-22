@@ -13,6 +13,7 @@
 #include <constants.hpp>
 
 SDL_Window *window;
+SDL_Gamepad *gamepad;
 SDL_GLContext context;
 GLuint program, vao, texture;
 Uint64 last = SDL_GetPerformanceCounter();
@@ -59,7 +60,7 @@ void message_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GL
 }
 
 void init() {
-  SDL_Init(SDL_INIT_VIDEO);
+  SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD);
 
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 6);
@@ -110,6 +111,22 @@ bool processKeyDown(SDL_Event event) {
   return false;
 }
 
+void gamepadAdded(SDL_Event event) {
+  if (!gamepad) {
+    gamepad = SDL_OpenGamepad(event.gdevice.which);
+    if (!gamepad) {
+      SDL_Log("Failed to open gamepad ID %u: %s", (unsigned int) event.gdevice.which, SDL_GetError());
+    }
+  }
+}
+
+void gamepadRemoved(SDL_Event event) {
+  if (gamepad && (SDL_GetGamepadID(gamepad) == event.gdevice.which)) {
+    SDL_CloseGamepad(gamepad);  /* our controller was unplugged. */
+    gamepad = nullptr;
+  }
+}
+
 void update() {
   auto now = SDL_GetPerformanceCounter();
   deltaTime = ((now - last) / (double)SDL_GetPerformanceFrequency());
@@ -125,9 +142,24 @@ void update() {
   SDL_GetRelativeMouseState(&x, &y);
   mouseMovement.x += x;
   mouseMovement.y += y;
-  std::println("({}, {})", x, y);
   int width, height;
   SDL_GetWindowSize(window, &width, &height);
+
+  if (gamepad) {
+    auto axis_x = SDL_GetGamepadAxis(gamepad, SDL_GAMEPAD_AXIS_LEFTX);
+    auto axis_y = SDL_GetGamepadAxis(gamepad, SDL_GAMEPAD_AXIS_LEFTY);
+
+    movement.forward = axis_y < -15000;
+    movement.backward = axis_y > 15000;
+    movement.left = axis_x < -15000;
+    movement.right = axis_x > 15000;
+
+    auto rightAxisX = SDL_GetGamepadAxis(gamepad, SDL_GAMEPAD_AXIS_RIGHTX);
+    auto rightAxisY = SDL_GetGamepadAxis(gamepad, SDL_GAMEPAD_AXIS_RIGHTY);
+
+    mouseMovement.x += (float)rightAxisX * 0.01f;
+    mouseMovement.y += (float)rightAxisY * 0.01f;
+  }
 
   updateCamera(deltaTime, mouseMovement.x / (float)width, mouseMovement.y / (float)height, movement);
 }
@@ -163,10 +195,8 @@ void run() {
     while (SDL_PollEvent(&event)) {
       if (event.type == SDL_EVENT_QUIT) done = true;
       if (event.type == SDL_EVENT_KEY_DOWN) done = processKeyDown(event);
-      // if (event.type == SDL_EVENT_MOUSE_MOTION) {
-      //   mouseMovement.x += event.motion.xrel;
-      //   mouseMovement.y += event.motion.yrel;
-      // }
+      if (event.type == SDL_EVENT_GAMEPAD_ADDED) gamepadAdded(event);
+      if (event.type == SDL_EVENT_GAMEPAD_REMOVED) gamepadRemoved(event);
     }
     update();
     draw();

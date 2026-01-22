@@ -3,7 +3,7 @@
 #include <stb_image.h>
 #include <print>
 
-GLuint createTexture(std::string path) {
+GLuint createTexture(const std::string &path) {
   int width, height, nrChannels;
   auto *data = stbi_load(path.c_str(), &width, &height, &nrChannels, 0);
 

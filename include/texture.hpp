@@ -3,4 +3,4 @@
 #include <glad/glad.h>
 #include <string>
 
-GLuint createTexture(std::string path);
+GLuint createTexture(const std::string &path);
